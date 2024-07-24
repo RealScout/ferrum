@@ -302,6 +302,31 @@ describe Ferrum::Network do
       expect(blocked_one).not_to include(/jquery/)
       expect(page_one.body).not_to include("Disappearing header")
     end
+
+    it 'supports subsequent intercepts if not blocked' do
+      network.blacklist = /jquery/
+
+      page.on(:request) do |request, index, total|
+        next unless request.status.nil?
+
+        if request.url.include?("/ferrum/non_existing")
+          request.respond(body: "<h1>custom content that is more than 45 characters</h1>")
+        else
+          request.continue if index + 1 == total
+        end
+      end
+
+      page.go_to("/ferrum/url_blacklist")
+
+      expect(blocked_urls.size).to eq(1)
+      expect(blocked_urls).not_to include(/unwanted/)
+      expect(blocked_urls).to include(/jquery/)
+      expect(page.body).to include("Disappearing header")
+
+      page.go_to("/ferrum/non_existing")
+      expect(network.status).to eq(200)
+      expect(page.body).to include("custom content that is more than 45 characters")
+    end
   end
 
   describe "#whitelist=" do

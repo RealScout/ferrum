@@ -453,11 +453,11 @@ module Ferrum
       @blacklist_subscribe ||= begin
         intercept
 
-        @page.on(:request) do |request|
+        @page.on(:request) do |request, index, total|
           if @blacklist.any? { |p| request.match?(p) }
             request.abort
           else
-            request.continue
+            request.continue if index + 1 == total
           end
         end
 
